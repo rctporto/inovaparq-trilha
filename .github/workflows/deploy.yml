@@ -18,6 +18,8 @@ permissions:
 
 jobs:
   deploy:
+    # Só publica depois que as variáveis do Firebase forem cadastradas no repositório.
+    if: ${{ vars.FIREBASE_PROJECT != '' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
