@@ -38,9 +38,17 @@ gcloud iam workload-identity-pools providers describe github --location=global -
     --issuer-uri="https://token.actions.githubusercontent.com" \
     --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.ref=assertion.ref" \
     --attribute-condition="assertion.repository=='$REPO' && assertion.ref=='refs/heads/main'"
-gcloud iam service-accounts add-iam-policy-binding "$SA" -q >/dev/null \
-  --role=roles/iam.workloadIdentityUser \
-  --member="principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github/attribute.repository/$REPO"
+# Uma conta recém-criada pode levar alguns minutos para aceitar permissões; tenta de novo.
+for TENTATIVA in 1 2 3 4 5 6; do
+  if gcloud iam service-accounts add-iam-policy-binding "$SA" -q >/dev/null \
+      --role=roles/iam.workloadIdentityUser \
+      --member="principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github/attribute.repository/$REPO"; then
+    break
+  fi
+  [ "$TENTATIVA" = 6 ] && { echo "Não deu certo. Rode o comando de novo daqui a alguns minutos."; exit 1; }
+  echo "A conta ainda está sendo criada, tentando de novo em 30 segundos..."
+  sleep 30
+done
 
 echo
 echo "Pronto. Número do projeto: $PROJECT_NUMBER"
