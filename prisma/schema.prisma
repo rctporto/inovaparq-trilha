@@ -1,0 +1,104 @@
+// Etapa 1 + autenticação: identidade, contas, aprovação e auditoria.
+// As próximas etapas (turmas, trilha, missões, XP, benefícios) acrescentam modelos aqui.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Papel global da conta. Papéis por programa/turma/projeto chegam na etapa 2.
+enum Role {
+  PARTICIPANTE
+  MENTOR
+  ADMIN
+  DESENVOLVEDOR
+}
+
+enum UserStatus {
+  PENDENTE
+  ATIVO
+  REJEITADO
+  INATIVO
+}
+
+model User {
+  id            String     @id @default(cuid())
+  name          String?
+  email         String     @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  role          Role       @default(PARTICIPANTE)
+  /// Perfil que a pessoa indicou no cadastro; quem aprova decide o papel final.
+  requestedRole Role       @default(PARTICIPANTE)
+  status        UserStatus @default(PENDENTE)
+  organization  String?
+  signupNote    String?
+  statusReason  String?
+  reviewedAt    DateTime?
+  reviewedById  String?
+  reviewedBy    User?      @relation("UserReviews", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewed      User[]     @relation("UserReviews")
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  accounts    Account[]
+  sessions    Session[]
+  auditsDone  AuditLog[] @relation("AuditActor")
+  auditsAbout AuditLog[] @relation("AuditTarget")
+
+  @@index([status, createdAt])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+/// Registro imutável de ações sensíveis (cadastro, aprovação, mudança de papel...).
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  actorId   String?
+  actor     User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  targetId  String?
+  target    User?    @relation("AuditTarget", fields: [targetId], references: [id], onDelete: SetNull)
+  details   Json?
+  createdAt DateTime @default(now())
+
+  @@index([targetId, createdAt])
+}
