@@ -1,0 +1,23 @@
+{
+  "name": "inovaparq-trilha",
+  "version": "0.2.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "emuladores": "firebase emulators:start --project demo-inovaparq",
+    "local": "next build && firebase emulators:start --project demo-inovaparq"
+  },
+  "dependencies": {
+    "firebase": "^12.19.0",
+    "next": "16.4.3",
+    "react": "19.2.0",
+    "react-dom": "19.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.0",
+    "@types/react": "^19.2.0",
+    "firebase-tools": "^14.27.0",
+    "typescript": "^5.9.3"
+  }
+}

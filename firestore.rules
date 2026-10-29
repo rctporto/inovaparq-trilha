@@ -1,0 +1,95 @@
+rules_version = '2';
+
+// Cada pessoa ou empresa só lê e grava os próprios dados.
+// As fases precisam ser concluídas em ordem e as bonificações só podem ser
+// solicitadas depois da fase que as libera. Manter os mapas abaixo iguais a
+// src/content/trilha.ts (ordem das fases) e rewardGatePhase em src/lib/progress.ts.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    function completed(uid, phaseId) {
+      return exists(/databases/$(database)/documents/users/$(uid)/completions/$(phaseId));
+    }
+
+    // Fase anterior de cada fase.
+    function previousPhase() {
+      return {
+        'problema': 'boas-vindas',
+        'clientes': 'problema',
+        'validacao-problema': 'clientes',
+        'ideacao': 'validacao-problema',
+        'prototipacao': 'ideacao',
+        'validacao-solucao': 'prototipacao',
+        'mercado': 'validacao-solucao',
+        'financeiro': 'mercado',
+        'capital': 'financeiro',
+        'consolidacao': 'capital',
+        'graduacao': 'consolidacao'
+      };
+    }
+
+    // Fase que libera cada bonificação.
+    function rewardGate() {
+      return {
+        'mentoria-validacao': 'validacao-problema',
+        'ferramentas': 'validacao-problema',
+        'mentoria-individual': 'validacao-solucao',
+        'consultoria': 'capital',
+        'banca-pitch': 'capital',
+        'diploma': 'graduacao'
+      };
+    }
+
+    function validText(v, max) {
+      return v == null || (v is string && v.size() <= max);
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['name', 'email', 'accountType', 'companyName', 'bio', 'avatar', 'createdAt'])
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 120
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.accountType in ['pf', 'pj']
+        && validText(request.resource.data.companyName, 160)
+        && request.resource.data.bio == null
+        && request.resource.data.avatar == null
+        && request.resource.data.createdAt == request.time;
+
+      allow update: if isOwner(uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'companyName', 'bio', 'avatar'])
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 120
+        && validText(request.resource.data.companyName, 160)
+        && validText(request.resource.data.bio, 500)
+        && (request.resource.data.avatar == null
+            || (request.resource.data.avatar is string
+                && request.resource.data.avatar.matches('^data:image/jpeg;base64,.*')
+                && request.resource.data.avatar.size() < 300000));
+
+      match /completions/{phaseId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && (phaseId == 'boas-vindas' || (phaseId in previousPhase() && completed(uid, previousPhase()[phaseId])))
+          && request.resource.data.keys().hasOnly(['score', 'xp', 'completedAt'])
+          && request.resource.data.xp == 100
+          && request.resource.data.score is int && request.resource.data.score >= 2 && request.resource.data.score <= 3
+          && request.resource.data.completedAt == request.time;
+      }
+
+      match /claims/{rewardId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && rewardId in rewardGate()
+          && completed(uid, rewardGate()[rewardId])
+          && request.resource.data.keys().hasOnly(['status', 'claimedAt'])
+          && request.resource.data.status == 'solicitado'
+          && request.resource.data.claimedAt == request.time;
+      }
+    }
+  }
+}
