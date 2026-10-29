@@ -4,7 +4,10 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   createUserWithEmailAndPassword,
+  browserPopupRedirectResolver,
+  GoogleAuthProvider,
   onAuthStateChanged,
+  signInWithPopup,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
@@ -20,22 +23,25 @@ import {
   type Timestamp,
 } from "firebase/firestore";
 import { firebase } from "./firebase";
+import { isAdminUser } from "./admin";
 import type { Claim, Completion, Profile } from "./types";
 
 type Session = {
   loading: boolean;
   user: User | null;
+  isAdmin: boolean;
   profile: Profile | null;
   completions: Completion[];
   claims: Claim[];
 };
 
-const Ctx = createContext<Session>({ loading: true, user: null, profile: null, completions: [], claims: [] });
+const EMPTY: Session = { loading: false, user: null, isAdmin: false, profile: null, completions: [], claims: [] };
+const Ctx = createContext<Session>({ ...EMPTY, loading: true });
 
 const toDate = (t: Timestamp | null | undefined) => (t ? t.toDate() : new Date());
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<Session>({ loading: true, user: null, profile: null, completions: [], claims: [] });
+  const [state, setState] = useState<Session>({ ...EMPTY, loading: true });
 
   useEffect(() => {
     let unsubs: (() => void)[] = [];
@@ -49,10 +55,15 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         await signupInFlight;
         if (auth.currentUser?.uid !== user?.uid) return;
         if (!user) {
-          setState({ loading: false, user: null, profile: null, completions: [], claims: [] });
+          setState(EMPTY);
           return;
         }
-        setState((s) => ({ ...s, loading: true, user }));
+        // O administrador não participa da trilha: vai direto para o painel.
+        if (isAdminUser(user)) {
+          setState({ ...EMPTY, user, isAdmin: true });
+          return;
+        }
+        setState({ ...EMPTY, loading: true, user });
         // Os dados chegam ao vivo: concluir uma fase atualiza a trilha na hora.
         const base = doc(db, "users", user.uid);
         unsubs.push(
@@ -92,14 +103,30 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
 export const useSession = () => useContext(Ctx);
 
-// Para páginas internas: manda para o login quem não estiver logado.
-export function useRequireSession() {
+// Para onde cada pessoa deve ir, conforme a situação do cadastro.
+export function homeFor(s: Session) {
+  if (!s.user) return "/";
+  if (s.isAdmin) return "/admin/";
+  if (!s.profile) return "/completar-cadastro/";
+  if (s.profile.status !== "aprovado") return "/aguardando/";
+  return "/trilha/";
+}
+
+// Mantém a pessoa só nas páginas que valem para a situação dela.
+// Devolve a sessão quando ela pode ficar; enquanto carrega ou redireciona, devolve null.
+export function useGate(allowed: string) {
   const s = useSession();
   const router = useRouter();
+  const target = s.loading ? null : homeFor(s);
   useEffect(() => {
-    if (!s.loading && !s.user) router.replace("/");
-  }, [s.loading, s.user, router]);
-  return s.loading || !s.profile ? null : (s as Session & { user: User; profile: Profile });
+    if (target && target !== allowed) router.replace(target);
+  }, [target, allowed, router]);
+  return target === allowed ? s : null;
+}
+
+// Páginas da trilha: só para cadastros aprovados.
+export function useRequireSession() {
+  return useGate("/trilha/") as (Session & { user: User; profile: Profile }) | null;
 }
 
 const AUTH_ERRORS: Record<string, string> = {
@@ -110,6 +137,10 @@ const AUTH_ERRORS: Record<string, string> = {
   "auth/invalid-email": "E-mail inválido.",
   "auth/weak-password": "A senha precisa ter pelo menos 8 caracteres.",
   "auth/too-many-requests": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+  "auth/popup-closed-by-user": "A janela do Google foi fechada antes de concluir.",
+  "auth/popup-blocked": "O navegador bloqueou a janela do Google. Permita pop-ups para este site.",
+  "auth/operation-not-allowed": "Esse tipo de login ainda não foi ativado no Firebase.",
+  "auth/account-exists-with-different-credential": "Esse e-mail já tem conta com senha. Entre com e-mail e senha.",
 };
 export const authMessage = (e: unknown) =>
   AUTH_ERRORS[(e as { code?: string })?.code ?? ""] ?? "Não foi possível concluir. Tente novamente.";
@@ -119,26 +150,48 @@ export async function login(email: string, password: string) {
   await signInWithEmailAndPassword(auth, email, password);
 }
 
+export async function loginWithGoogle() {
+  const { auth } = await firebase();
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: "select_account" });
+  await signInWithPopup(auth, provider, browserPopupRedirectResolver);
+}
+
+type ProfileInput = { name: string; accountType: "pf" | "pj"; companyName: string };
+
+// Todo cadastro novo começa aguardando a aprovação do Inovaparq.
+function newProfile(email: string | null, data: ProfileInput) {
+  return {
+    name: data.name,
+    email,
+    accountType: data.accountType,
+    companyName: data.accountType === "pj" ? data.companyName : null,
+    bio: null,
+    avatar: null,
+    status: "pendente",
+    createdAt: serverTimestamp(),
+  };
+}
+
+// Quem entrou com Google completa o cadastro depois do login.
+export async function completeProfile(data: ProfileInput) {
+  const { auth, db } = await firebase();
+  const user = auth.currentUser!;
+  await setDoc(doc(db, "users", user.uid), newProfile(user.email, data));
+}
+
 let signupInFlight: Promise<unknown> = Promise.resolve();
 
-export function signup(data: { name: string; email: string; password: string; accountType: "pf" | "pj"; companyName: string }) {
+export function signup(data: ProfileInput & { email: string; password: string }) {
   const run = createAccount(data);
   signupInFlight = run.catch(() => {});
   return run;
 }
 
-async function createAccount(data: { name: string; email: string; password: string; accountType: "pf" | "pj"; companyName: string }) {
+async function createAccount(data: ProfileInput & { email: string; password: string }) {
   const { auth, db } = await firebase();
   const cred = await createUserWithEmailAndPassword(auth, data.email, data.password);
-  await setDoc(doc(db, "users", cred.user.uid), {
-    name: data.name,
-    email: cred.user.email,
-    accountType: data.accountType,
-    companyName: data.accountType === "pj" ? data.companyName : null,
-    bio: null,
-    avatar: null,
-    createdAt: serverTimestamp(),
-  });
+  await setDoc(doc(db, "users", cred.user.uid), newProfile(cred.user.email, data));
 }
 
 export async function resetPassword(email: string) {

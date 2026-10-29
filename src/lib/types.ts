@@ -7,6 +7,8 @@ export type Profile = {
   bio: string | null;
   // Foto ou logo já reduzida no navegador (JPEG em data URL, ~256 px).
   avatar: string | null;
+  // Cadastros novos aguardam aprovação do Inovaparq antes de entrar na trilha.
+  status: "pendente" | "aprovado" | "recusado";
   createdAt: Date;
 };
 

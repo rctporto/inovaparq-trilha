@@ -15,15 +15,18 @@ consultorias, banca de pitch), perfil com foto ou logo e histórico de progresso
 | Cores e fontes da marca | topo de `src/app/globals.css`; logos em `public/brand/` |
 | Publicação automática | `.github/workflows/deploy.yml` (a cada push na `main`) e `scripts/configurar-publicacao.sh` |
 
-- **Login:** e-mail e senha (Firebase Authentication), com "Esqueci minha senha" por e-mail.
-- **Dados:** `users/<uid>` (perfil; foto/logo reduzida para 256 px dentro do próprio documento),
+- **Login:** conta Google ou e-mail e senha (Firebase Authentication), com "Esqueci minha senha".
+- **Aprovação:** todo cadastro novo (pessoa ou empresa) fica "pendente" e só entra na trilha depois
+  que o administrador aprova. Administradores: contas Google listadas em `src/lib/admin.ts` e em
+  `isAdmin()` de `firestore.rules` (hoje, renato@norionano.com.br). Eles entram direto no
+  **Painel do Inovaparq** (`/admin/`): aprovam ou recusam cadastros, acompanham o progresso de cada
+  participante e mudam o status das bonificações (solicitado → agendado → concluído).
+- **Dados:** `users/<uid>` (perfil e status do cadastro; foto/logo reduzida para 256 px dentro do próprio documento),
   `users/<uid>/completions/<fase>` e `users/<uid>/claims/<bonificação>`.
 - **Regras no servidor:** cada conta só vê os próprios dados; fases só podem ser concluídas em ordem,
   com XP fixo; bonificações só podem ser solicitadas depois da fase que as libera, sempre com status
   "solicitado" (só a equipe muda o status). Ao mudar a ordem das fases ou das bonificações em
   `src/content/trilha.ts`, atualize os mapas em `firestore.rules`.
-- **Pedidos de bonificação:** por enquanto a equipe acompanha pelo console do Firebase
-  (Firestore → users → claims). Um painel administrativo é o próximo passo.
 
 ## Rodar localmente
 
@@ -38,7 +41,7 @@ npm run local        # gera o site e abre em http://localhost:5000 com login e b
 
 1. Crie o projeto no [console do Firebase](https://console.firebase.google.com) (plano gratuito Spark).
 2. **Firestore:** Criar banco de dados, local `southamerica-east1 (São Paulo)`, modo de produção.
-3. **Login:** Authentication → Vamos começar → Método de login → E-mail/senha → Ativar.
+3. **Login:** Authentication → Vamos começar → Método de login → ative **E-mail/senha** e **Google**.
    Em Modelos, troque o idioma para português.
 4. **App da Web:** Configurações do projeto → Seus apps → `</>`, nome "Trilha Inovaparq".
    Depois, em Hosting, clique em Vamos começar e avance até o fim.
