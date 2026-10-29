@@ -4,6 +4,7 @@ import { HeroArt } from "@/components/HeroArt";
 import { Button, DemoRibbon, EmptyState, ListRow, PageHead, ProgressBar, StatusBadge } from "@/components/ui";
 import { Icon } from "@/components/ui/Icon";
 import { CURRENT_PHASE, PHASES } from "@/lib/demo";
+import { GAMES } from "@/lib/games/catalog";
 
 export const metadata: Metadata = { title: "Detalhe da fase" };
 
@@ -12,6 +13,16 @@ export default async function Fase({ params }: { params: Promise<{ numero: strin
   if (!Number.isInteger(n) || n < 1 || n > PHASES.length) notFound();
   const phase = PHASES[n - 1];
   const label = `Fase ${String(n).padStart(2, "0")} · ${phase.name}`;
+  const game = GAMES.find((g) => g.phase === n);
+  const gameCard = game && (
+    <section className="card row between wrap mt">
+      <div className="row">
+        <div className="feature-icon plum" style={{ margin: 0 }}><Icon name={game.icon} /></div>
+        <div><div className="eyebrow" style={{ marginBottom: 4 }}>Jogo da fase · {game.mechanic}</div><h2 style={{ margin: 0 }}>{game.title}</h2><p className="tiny muted" style={{ margin: "4px 0 0" }}>{game.pitch}</p></div>
+      </div>
+      <Button href={`/jogos/${game.id}`} icon="play">Jogar</Button>
+    </section>
+  );
   const back = <Button href="/jornada" variant="light" icon="back">Voltar à jornada</Button>;
 
   if (phase.state === "locked")
@@ -21,6 +32,7 @@ export default async function Fase({ params }: { params: Promise<{ numero: strin
         <section className="card">
           <EmptyState icon="lock" title="Fase ainda bloqueada" text={`Para desbloquear, conclua a fase ${PHASES[n - 2].name}: avaliação teórica com pelo menos 80%, missão prática com 70/100 e as atividades de reflexão e colaboração.`} action={<Button href={`/fase/${CURRENT_PHASE}`} small>Ir para a fase atual</Button>} />
         </section>
+        {game && <p className="tiny muted mt">O jogo “{game.title}” desta fase já pode ser jogado como prática na <a href="/jogos" style={{ color: "var(--plum)" }}>Arena de jogos</a>.</p>}
       </>
     );
 
@@ -32,6 +44,7 @@ export default async function Fase({ params }: { params: Promise<{ numero: strin
         <section className="card">
           <EmptyState icon="book" title="Conteúdo em preparação" text="Os treinamentos desta fase serão cadastrados a partir do currículo oficial (CURRICULO_SEED.json) na etapa 3." />
         </section>
+        {gameCard}
       </>
     );
 

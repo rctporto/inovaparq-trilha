@@ -9,6 +9,7 @@ export const NAV: Record<Area, { title: string; items: NavItem[] }> = {
     items: [
       { href: "/inicio", label: "Visão geral", icon: "home" },
       { href: "/jornada", label: "Minha jornada", icon: "route" },
+      { href: "/jogos", label: "Jogos", icon: "spark" },
       { href: "/projeto", label: "Meu projeto", icon: "flag" },
       { href: "/recompensas", label: "Recompensas", icon: "gift" },
       { href: "/mentores", label: "Mentorias", icon: "people" },

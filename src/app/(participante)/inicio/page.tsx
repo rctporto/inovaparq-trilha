@@ -47,6 +47,7 @@ export default async function Inicio() {
             </div>
             <ListRow title="Concluir: seleção de ideias" desc="Aula 3 de 4 · 8 minutos" icon="play" tail={<Button href="/aula" variant="light" small>Retomar</Button>} />
             <ListRow title="Enviar matriz de alternativas" desc="Missão da fase Criador · em elaboração" icon="file" tail={<Button href="/missao" variant="light" small>Abrir missão</Button>} />
+            <ListRow title="Desafio rápido: Fato ou suposição?" desc="Arena de jogos · 2 minutos · vale estrelas" icon="spark" tail={<Button href="/jogos/fato-ou-suposicao" variant="ghost" small icon="play">Jogar</Button>} />
             <ListRow title="Compartilhar uma descoberta" desc="Comunidade · turma Semente" icon="chat" tail={<Button href="/comunidade" variant="light" small>Participar</Button>} />
           </section>
         </div>

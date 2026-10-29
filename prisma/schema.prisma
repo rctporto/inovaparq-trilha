@@ -48,6 +48,7 @@ model User {
 
   accounts    Account[]
   sessions    Session[]
+  gameResults GameResult[]
   auditsDone  AuditLog[] @relation("AuditActor")
   auditsAbout AuditLog[] @relation("AuditTarget")
 
@@ -101,4 +102,19 @@ model AuditLog {
   createdAt DateTime @default(now())
 
   @@index([targetId, createdAt])
+}
+
+/// Resultado de uma partida dos jogos de aprendizagem. Prática: gera estrelas, não XP da trilha.
+model GameResult {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameId     String
+  score      Int
+  maxScore   Int
+  stars      Int
+  durationMs Int
+  createdAt  DateTime @default(now())
+
+  @@index([userId, gameId, score])
 }

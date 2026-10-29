@@ -64,6 +64,24 @@ Regras de quem pode fazer o quê (`src/lib/roles.ts`, testadas em `tests/roles.t
 A animação da tela inicial (`src/components/AnimatedBackground.tsx`) respeita `prefers-reduced-motion`,
 pausa quando a aba fica oculta e tem botão “Pausar animação” (preferência lembrada no navegador).
 
+## Jogos de aprendizagem (`/jogos`)
+
+Arena com cinco jogos curtos, cada um ligado ao tema de uma fase (o cartão aparece também na página da fase):
+
+| Jogo | Fase | Mecânica | Ensina |
+| --- | --- | --- | --- |
+| Fato ou suposição? | 2 · Investigador | Classificação contra o relógio, com combo | Evidência x opinião, vieses de entrevista |
+| Memória do Canvas | 5 · Arquiteto | Jogo da memória | Blocos do Business Model Canvas com exemplos |
+| Monte o experimento | 6 · Construtor | Ordenar etapas (3 tentativas) | Ciclo de experimento com critério definido antes |
+| Mesa de negociação | 7 · Negociador | Diálogo com escolhas e medidor de confiança | Perguntar antes de dar preço, contrapartidas, pilotos |
+| Fôlego de caixa | 8 · Gestor | Simulação de 6 meses | Queima de caixa, runway, custo fixo x receita, equipe |
+
+- Cada partida é salva em `GameResult`; as estrelas (35%, 65%, 90% da pontuação) são calculadas no servidor
+  (`src/app/actions/games.ts`), que limita a pontuação ao máximo do jogo e ignora partidas com menos de 4 s.
+- Jogos são **prática**: rendem estrelas e recordes, mas **não somam XP da trilha** (mantém o teto de 500 XP por fase do roteiro).
+- Conteúdo dos jogos fica no próprio componente (`src/components/games/*`); o mesmo formato serve para outras fases.
+- Teclado: todos os jogos funcionam sem mouse; animações respeitam “reduzir movimento”.
+
 ## O que é real e o que é demonstração
 
 **Real (banco + servidor):** contas, login Google/e-mail, aprovação, papéis, bloqueio de áreas por papel,
