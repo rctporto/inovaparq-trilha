@@ -18,8 +18,7 @@ permissions:
 env:
   FIREBASE_PROJECT: inovaparq-trilha
   DEPLOY_SERVICE_ACCOUNT: github-deploy@inovaparq-trilha.iam.gserviceaccount.com
-  # Preencher com o número que scripts/configurar-publicacao.sh mostra no final.
-  WIF_PROVIDER: ""
+  WIF_PROVIDER: projects/797554163678/locations/global/workloadIdentityPools/github/providers/github
 
 jobs:
   deploy:
@@ -35,7 +34,7 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-      # Só publica depois que WIF_PROVIDER for preenchido (antes disso, só confere se o site compila).
+      # Só publica quando WIF_PROVIDER estiver preenchido (antes disso, só confere se o site compila).
       - uses: google-github-actions/auth@v2
         if: env.WIF_PROVIDER != ''
         with:
