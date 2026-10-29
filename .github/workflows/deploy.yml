@@ -43,4 +43,5 @@ jobs:
 
       - name: Publicar site e regras do banco
         if: env.WIF_PROVIDER != ''
-        run: npx firebase deploy --only hosting,firestore:rules --project "$FIREBASE_PROJECT" --non-interactive
+        # Mesma versão usada no NÓRIO R&D OS, que já publica com esse tipo de credencial.
+        run: npx --yes firebase-tools@13.29.1 deploy --only hosting,firestore:rules --project "$FIREBASE_PROJECT" --non-interactive
