@@ -43,5 +43,5 @@ npm run local        # gera o site e abre em http://localhost:5000 com login e b
 4. **App da Web:** Configurações do projeto → Seus apps → `</>`, nome "Trilha Inovaparq".
    Depois, em Hosting, clique em Vamos começar e avance até o fim.
 5. No Cloud Shell do projeto, rode `scripts/configurar-publicacao.sh <id-do-projeto> <dono/repositorio>`
-   e cadastre as três variáveis que ele mostra no GitHub (Settings → Secrets and variables → Actions → Variables).
+   e coloque o número do projeto que ele mostra em `WIF_PROVIDER`, no topo de `.github/workflows/deploy.yml`.
 6. Faça um push na `main` (ou rode o workflow manualmente) para publicar.

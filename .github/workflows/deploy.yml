@@ -10,16 +10,19 @@ concurrency:
   cancel-in-progress: false
 
 # id-token: o GitHub emite um token que o Google aceita no lugar de uma chave
-# (configurado uma vez com scripts/configurar-publicacao.sh, que informa os
-# valores das variáveis do repositório usadas abaixo).
+# (configurado uma vez com scripts/configurar-publicacao.sh).
 permissions:
   contents: read
   id-token: write
 
+env:
+  FIREBASE_PROJECT: inovaparq-trilha
+  DEPLOY_SERVICE_ACCOUNT: github-deploy@inovaparq-trilha.iam.gserviceaccount.com
+  # Preencher com o número que scripts/configurar-publicacao.sh mostra no final.
+  WIF_PROVIDER: ""
+
 jobs:
   deploy:
-    # Só publica depois que as variáveis do Firebase forem cadastradas no repositório.
-    if: ${{ vars.FIREBASE_PROJECT != '' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,10 +35,13 @@ jobs:
       - run: npm ci
       - run: npm run build
 
+      # Só publica depois que WIF_PROVIDER for preenchido (antes disso, só confere se o site compila).
       - uses: google-github-actions/auth@v2
+        if: env.WIF_PROVIDER != ''
         with:
-          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
-          service_account: ${{ vars.DEPLOY_SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SERVICE_ACCOUNT }}
 
       - name: Publicar site e regras do banco
-        run: npx firebase deploy --only hosting,firestore:rules --project "${{ vars.FIREBASE_PROJECT }}" --non-interactive
+        if: env.WIF_PROVIDER != ''
+        run: npx firebase deploy --only hosting,firestore:rules --project "$FIREBASE_PROJECT" --non-interactive

@@ -43,7 +43,5 @@ gcloud iam service-accounts add-iam-policy-binding "$SA" -q >/dev/null \
   --member="principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github/attribute.repository/$REPO"
 
 echo
-echo "Pronto. Variáveis do repositório (GitHub → Settings → Secrets and variables → Actions → Variables):"
-echo "  FIREBASE_PROJECT        = $PROJECT_ID"
-echo "  WIF_PROVIDER            = projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github/providers/github"
-echo "  DEPLOY_SERVICE_ACCOUNT  = $SA"
+echo "Pronto. Número do projeto: $PROJECT_NUMBER"
+echo "Mande esse número para o Claude terminar a configuração."
