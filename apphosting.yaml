@@ -1,0 +1,26 @@
+# Firebase App Hosting (Next.js com servidor). Os segredos ficam no Cloud Secret Manager:
+#   firebase apphosting:secrets:set DATABASE_URL   (e AUTH_SECRET, AUTH_GOOGLE_ID, AUTH_GOOGLE_SECRET)
+runConfig:
+  minInstances: 0
+  maxInstances: 3
+  concurrency: 80
+  memoryMiB: 512
+
+scripts:
+  # Aplica as migrations no banco antes de gerar o build.
+  buildCommand: npm run build:apphosting
+
+env:
+  - variable: AUTH_TRUST_HOST
+    value: "true"
+  - variable: BOOTSTRAP_DEV_EMAILS
+    value: ""
+  - variable: DATABASE_URL
+    secret: DATABASE_URL
+    availability: [BUILD, RUNTIME]
+  - variable: AUTH_SECRET
+    secret: AUTH_SECRET
+  - variable: AUTH_GOOGLE_ID
+    secret: AUTH_GOOGLE_ID
+  - variable: AUTH_GOOGLE_SECRET
+    secret: AUTH_GOOGLE_SECRET
