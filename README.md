@@ -103,7 +103,23 @@ final fará e nunca simulam sucesso. Serão substituídos nas etapas 3 a 7 do ro
 ## Publicação
 
 Esta versão precisa de um servidor Node.js e de um PostgreSQL (não é mais um site estático).
-Opções simples: Vercel + Neon/Supabase (Postgres), Render ou Railway, ou Firebase App Hosting + Cloud SQL.
+
+### Firebase App Hosting (configuração incluída em `apphosting.yaml`)
+
+1. No console do Firebase, projeto `inovaparq-trilha`: mude para o plano **Blaze** (pago conforme o uso; o
+   App Hosting exige). Configure um alerta de orçamento em Faturamento.
+2. Banco PostgreSQL: **Cloud SQL** (mesmo projeto, região `southamerica-east1`) ou um Postgres externo com plano
+   gratuito (ex.: Neon). Guarde a URL de conexão.
+3. Crie os segredos (no Cloud Shell ou com o Firebase CLI):
+   `firebase apphosting:secrets:set DATABASE_URL`, `AUTH_SECRET` (gere com `openssl rand -base64 32`),
+   `AUTH_GOOGLE_ID` e `AUTH_GOOGLE_SECRET`.
+4. App Hosting → Criar backend → conecte o GitHub `rctporto/inovaparq-trilha`, branch `main`, região
+   `southamerica-east1`. Cada push na `main` publica; o build roda `prisma migrate deploy` antes do `next build`.
+5. Preencha `BOOTSTRAP_DEV_EMAILS` em `apphosting.yaml` com o seu e-mail para a primeira conta nascer Desenvolvedor.
+6. No Google Cloud (Credenciais OAuth), adicione `https://SEU-BACKEND.web.app/api/auth/callback/google`
+   (ou o domínio próprio) às URIs de redirecionamento.
+
+Outras opções: Vercel + Neon/Supabase, Render ou Railway.
 Em qualquer uma: configure as variáveis de `.env.example`, rode `npx prisma migrate deploy` e `npm run db:seed`
 e inclua `https://SEU-DOMINIO/api/auth/callback/google` nas URIs de redirecionamento do Google.
 
