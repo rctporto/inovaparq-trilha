@@ -1,175 +1,80 @@
-"use client";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { Button, DataTable, DemoRibbon, ListRow, PageHead, StatCard, StatusBadge } from "@/components/ui";
+import { prisma } from "@/lib/db";
 
-import { useState } from "react";
-import { useGate } from "@/lib/session";
-import { CLAIM_STATUSES, setClaimStatus, setUserStatus, useParticipants, type Participant } from "@/lib/adminData";
-import { computeProgress } from "@/lib/progress";
-import { displayName } from "@/lib/types";
-import { phases, rewards } from "@/content/trilha";
-import { Avatar } from "@/components/Avatar";
-import { Loading } from "@/components/Loading";
+export const metadata: Metadata = { title: "Painel administrativo" };
 
-type Tab = "solicitacoes" | "participantes" | "bonificacoes";
+const COHORTS = [
+  { n: "Semente · 2026.2", a: 36, p: 6, ok: true },
+  { n: "Conexão · 2026.2", a: 32, p: 4, ok: true },
+  { n: "Ciência em Ação", a: 28, p: 8, ok: false },
+  { n: "Novos Caminhos", a: 32, p: 3, ok: true },
+];
+const DIST = [22, 24, 18, 16, 12, 10, 9, 7, 6, 4];
 
-const fmt = (d: Date) => d.toLocaleDateString("pt-BR");
-const kind = (p: Participant) => (p.accountType === "pj" ? "Empresa" : "Pessoa");
-
-export default function AdminPage() {
-  const s = useGate("/admin/");
-  const { participants, error } = useParticipants();
-  const [tab, setTab] = useState<Tab>("solicitacoes");
-  const [busy, setBusy] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
-  if (!s) return <Loading />;
-  if (error) return <p className="error">{error}</p>;
-  if (!participants) return <Loading />;
-
-  const pending = participants.filter((p) => p.status === "pendente");
-  const approved = participants.filter((p) => p.status === "aprovado");
-  const refused = participants.filter((p) => p.status === "recusado");
-  const claims = participants
-    .flatMap((p) => p.claims.map((c) => ({ ...c, participant: p })))
-    .sort((a, b) => b.claimedAt.getTime() - a.claimedAt.getTime());
-  const openClaims = claims.filter((c) => c.status !== "concluído").length;
-
-  async function run(key: string, fn: () => Promise<void>) {
-    setBusy(key);
-    setActionError(null);
-    try {
-      await fn();
-    } catch {
-      setActionError("Não foi possível salvar a alteração. Tente de novo.");
-    }
-    setBusy(null);
-  }
-
+export default async function AdminHome() {
+  const [pending, active] = await Promise.all([
+    prisma.user.count({ where: { status: "PENDENTE" } }),
+    prisma.user.count({ where: { status: "ATIVO" } }),
+  ]);
   return (
-    <div className="stack">
-      <h1>Painel do Inovaparq</h1>
-      <div className="tabs" role="toolbar">
-        <button aria-pressed={tab === "solicitacoes"} onClick={() => setTab("solicitacoes")}>
-          Solicitações de cadastro{pending.length > 0 && <span className="badge">{pending.length}</span>}
-        </button>
-        <button aria-pressed={tab === "participantes"} onClick={() => setTab("participantes")}>
-          Participantes ({approved.length})
-        </button>
-        <button aria-pressed={tab === "bonificacoes"} onClick={() => setTab("bonificacoes")}>
-          Bonificações{openClaims > 0 && <span className="badge">{openClaims}</span>}
-        </button>
+    <>
+      <PageHead eyebrow="Visão administrativa" title="O impacto da jornada, em perspectiva." desc="Acompanhe aprendizagem, participação e capacidade de atendimento." action={<Button href="/admin/turmas" variant="light" icon="people">Gerenciar turmas</Button>} />
+      {pending > 0 && (
+        <div className="notice rose mb row between wrap">
+          <span><b>{pending} cadastro{pending > 1 ? "s" : ""} aguardando aprovação.</b> As pessoas só acessam a plataforma depois da sua decisão.</span>
+          <Link className="btn small" href="/admin/usuarios">Revisar cadastros</Link>
+        </div>
+      )}
+      <div className="grid g4 mb">
+        <StatCard label="Contas ativas" value={active} note="Dado real · todas as áreas" icon="people" />
+        <StatCard label="Cadastros pendentes" value={pending} note="Dado real · aguardando aprovação" icon="shield" />
+        <StatCard label="Tempo de avaliação" value="2,4 dias" note="Demonstrativo · mediana 30 dias" icon="clock" />
+        <StatCard label="Mentorias realizadas" value="36" note="Demonstrativo · 81% de presença" icon="calendar" />
       </div>
-      {actionError && <p className="error">{actionError}</p>}
-
-      {tab === "solicitacoes" && (
-        <div className="card stack">
-          <h2>Aguardando aprovação</h2>
-          {pending.length === 0 ? (
-            <p className="muted">Nenhuma solicitação pendente.</p>
-          ) : (
-            <ul className="admin-list">
-              {pending.map((p) => (
-                <li key={p.uid}>
-                  <Avatar profile={p} size={44} />
-                  <div className="who">
-                    <strong>{displayName(p)}</strong> <span className="tag">{kind(p)}</span>
-                    <div className="muted">
-                      {p.accountType === "pj" && <>Responsável: {p.name} · </>}
-                      {p.email} · pediu em {fmt(p.createdAt)}
-                    </div>
-                  </div>
-                  <div className="actions">
-                    <button className="btn btn-sm" disabled={busy === p.uid}
-                      onClick={() => run(p.uid, () => setUserStatus(p.uid, "aprovado"))}>Aprovar</button>
-                    <button className="btn btn-sm btn-danger" disabled={busy === p.uid}
-                      onClick={() => run(p.uid, () => setUserStatus(p.uid, "recusado"))}>Recusar</button>
-                  </div>
-                </li>
+      <DemoRibbon>Os blocos abaixo são demonstrativos. Indicadores de fases, turmas e entregas serão calculados do banco na etapa 7.</DemoRibbon>
+      <div className="grid wide">
+        <div className="stack">
+          <section className="card">
+            <div className="row between"><h2>Participantes por fase atual</h2><StatusBadge tone="gray">Dados ilustrativos</StatusBadge></div>
+            <p className="tiny muted">Distribuição dos 128 participantes ativos</p>
+            <div className="bars" role="img" aria-label={`Participantes por fase: ${DIST.map((n, i) => `fase ${i + 1}: ${n}`).join(", ")}`}>
+              {DIST.map((n, i) => (
+                <div className="bar-item" key={i}><small>{n}</small><div className="bar" style={{ height: n * 4 }} /><span>{i + 1}</span></div>
               ))}
-            </ul>
-          )}
-          {refused.length > 0 && (
-            <>
-              <h3>Recusados</h3>
-              <ul className="admin-list">
-                {refused.map((p) => (
-                  <li key={p.uid}>
-                    <div className="who">
-                      <strong>{displayName(p)}</strong> <span className="muted">{p.email}</span>
-                    </div>
-                    <button className="btn btn-sm btn-ghost" disabled={busy === p.uid}
-                      onClick={() => run(p.uid, () => setUserStatus(p.uid, "aprovado"))}>Aprovar mesmo assim</button>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
+            </div>
+            <p className="tiny muted" style={{ textAlign: "center", marginBottom: 0 }}>Fases da jornada</p>
+          </section>
+          <section className="card">
+            <h2>Acompanhamento das turmas</h2>
+            <DataTable
+              rows={COHORTS}
+              rowKey={(r) => r.n}
+              columns={[
+                { header: "Turma", cell: (r) => r.n },
+                { header: "Ativos", cell: (r) => r.a },
+                { header: "Entregas pendentes", cell: (r) => r.p },
+                { header: "Situação", cell: (r) => <StatusBadge tone={r.ok ? "green" : "gold"}>{r.ok ? "Em andamento" : "Atenção à avaliação"}</StatusBadge> },
+              ]}
+            />
+          </section>
         </div>
-      )}
-
-      {tab === "participantes" && (
-        <div className="card">
-          {approved.length === 0 ? (
-            <p className="muted">Ninguém aprovado ainda.</p>
-          ) : (
-            <ul className="admin-list">
-              {approved.map((p) => {
-                const { xp, level, phaseStates } = computeProgress(p.completions, p.claims);
-                const current = phaseStates.find((x) => x.state === "current");
-                return (
-                  <li key={p.uid}>
-                    <Avatar profile={p} size={44} />
-                    <div className="who">
-                      <strong>{displayName(p)}</strong> <span className="tag">{kind(p)}</span>
-                      <div className="muted">{p.email}</div>
-                    </div>
-                    <div style={{ minWidth: 220 }}>
-                      <div>Nível {level.level} · {level.name} · {xp} XP</div>
-                      <div className="muted">
-                        <span className="minibar"><div style={{ width: `${(p.completions.length / phases.length) * 100}%` }} /></span>{" "}
-                        {p.completions.length}/{phases.length} fases{current ? ` · agora em "${current.title}"` : " · trilha concluída"}
-                      </div>
-                    </div>
-                    <button className="btn btn-sm btn-ghost" disabled={busy === p.uid}
-                      onClick={() => {
-                        if (confirm(`Suspender o acesso de ${displayName(p)}? O progresso fica guardado.`)) {
-                          run(p.uid, () => setUserStatus(p.uid, "pendente"));
-                        }
-                      }}>Suspender</button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
-      )}
-
-      {tab === "bonificacoes" && (
-        <div className="card">
-          {claims.length === 0 ? (
-            <p className="muted">Nenhuma bonificação solicitada ainda.</p>
-          ) : (
-            <ul className="admin-list">
-              {claims.map((c) => (
-                <li key={c.participant.uid + c.rewardId}>
-                  <div className="who">
-                    <strong>{rewards.find((r) => r.id === c.rewardId)?.title ?? c.rewardId}</strong>
-                    <div className="muted">
-                      {displayName(c.participant)} · {c.participant.email} · pedido em {fmt(c.claimedAt)}
-                    </div>
-                  </div>
-                  <label style={{ fontWeight: 400 }}>
-                    <select value={c.status} disabled={busy === c.participant.uid + c.rewardId}
-                      className={`tag status-${c.status === "concluído" ? "aprovado" : c.status === "agendado" ? "aprovado" : "pendente"}`}
-                      onChange={(e) => run(c.participant.uid + c.rewardId,
-                        () => setClaimStatus(c.participant.uid, c.rewardId, e.target.value as (typeof CLAIM_STATUSES)[number]))}>
-                      {CLAIM_STATUSES.map((st) => <option key={st} value={st}>{st}</option>)}
-                    </select>
-                  </label>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-    </div>
+        <aside className="stack">
+          <section className="card">
+            <h2>Onde atuar agora</h2>
+            <ListRow title={`${pending} cadastros aguardando`} desc="Aprovar ou recusar novos acessos" icon="shield" tail={<Button href="/admin/usuarios" variant="light" small>Ver</Button>} />
+            <ListRow title="8 entregas aguardando" desc="Turma Ciência em Ação · revisar distribuição" tail={<Button href="/admin/turmas" variant="light" small>Ver</Button>} />
+            <ListRow title="2 benefícios com poucas vagas" desc="Planejar capacidade dos próximos encontros" icon="gift" tail={<Button href="/admin/beneficios" variant="light" small>Ver</Button>} />
+          </section>
+          <section className="card">
+            <h2>Aprendizado demonstrado</h2>
+            <p className="sub">Acompanhe a qualidade das entregas e a evolução das competências ao longo do ciclo.</p>
+            <div className="divider" />
+            <div className="row between"><span className="smalltext">Média das entregas aprovadas</span><b>82/100</b></div>
+          </section>
+        </aside>
+      </div>
+    </>
   );
 }

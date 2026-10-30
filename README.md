@@ -1,50 +1,118 @@
-# Inovaparq · Trilha de Inovação
+# Inovaparq · Jornada empreendedora
 
-Plataforma gamificada de inovação do Inovaparq: login de pessoas e empresas, trilha em formato de
-tabuleiro baseada na metodologia de incubação do Inovaparq, XP e níveis, bonificações (mentorias,
-consultorias, banca de pitch), perfil com foto ou logo e histórico de progresso.
+Plataforma de treinamento em empreendedorismo e inovação para as startups do Inovaparq.
+Esta versão entrega a **etapa 1** do roteiro (estrutura, identidade e navegação) e o **fluxo real de acesso**:
+login com Google, cadastro por e-mail e senha e aprovação de contas por Administrador/Desenvolvedor.
 
-## Como funciona
+## Stack
 
-| Peça | Onde fica |
-| --- | --- |
-| Páginas (Next.js, exportado como site estático) | `src/app/` |
-| Fases, níveis e bonificações | `src/content/trilha.ts` |
-| Login e dados (Firebase Auth + Cloud Firestore) | `src/lib/session.tsx`, `src/lib/firebase.ts` |
-| Quem pode ler e gravar | `firestore.rules` |
-| Cores e fontes da marca | topo de `src/app/globals.css`; logos em `public/brand/` |
-| Publicação automática | `.github/workflows/deploy.yml` (a cada push na `main`) e `scripts/configurar-publicacao.sh` |
+- Next.js 15 (App Router) + React 19 + TypeScript
+- Auth.js v5 (Google + e-mail/senha) com adaptador Prisma
+- PostgreSQL + Prisma 6 (migrations em `prisma/migrations`)
+- Tailwind CSS 4 + design system portado do protótipo (`src/app/globals.css`)
+- Vitest (regras de papéis e aprovação)
 
-- **Login:** conta Google ou e-mail e senha (Firebase Authentication), com "Esqueci minha senha".
-- **Aprovação:** todo cadastro novo (pessoa ou empresa) fica "pendente" e só entra na trilha depois
-  que o administrador aprova. Administradores: contas Google listadas em `src/lib/admin.ts` e em
-  `isAdmin()` de `firestore.rules` (hoje, renato@norionano.com.br). Eles entram direto no
-  **Painel do Inovaparq** (`/admin/`): aprovam ou recusam cadastros, acompanham o progresso de cada
-  participante e mudam o status das bonificações (solicitado → agendado → concluído).
-- **Dados:** `users/<uid>` (perfil e status do cadastro; foto/logo reduzida para 256 px dentro do próprio documento),
-  `users/<uid>/completions/<fase>` e `users/<uid>/claims/<bonificação>`.
-- **Regras no servidor:** cada conta só vê os próprios dados; fases só podem ser concluídas em ordem,
-  com XP fixo; bonificações só podem ser solicitadas depois da fase que as libera, sempre com status
-  "solicitado" (só a equipe muda o status). Ao mudar a ordem das fases ou das bonificações em
-  `src/content/trilha.ts`, atualize os mapas em `firestore.rules`.
-
-## Rodar localmente
-
-Requer Node 22 e Java (para os emuladores do Firebase). Nada sai da máquina.
+## Como rodar localmente
 
 ```bash
+cp .env.example .env          # preencha DATABASE_URL e AUTH_SECRET (npx auth secret)
 npm install
-npm run local        # gera o site e abre em http://localhost:5000 com login e banco locais
+npx prisma migrate deploy     # cria as tabelas
+npm run db:seed               # opcional: cria a conta Desenvolvedor de SEED_DEV_EMAIL/SEED_DEV_PASSWORD
+npm run dev                   # http://localhost:3000
 ```
 
-## Configuração no Firebase (uma vez)
+Verificações: `npm run typecheck`, `npm test`, `npm run build`.
 
-1. Crie o projeto no [console do Firebase](https://console.firebase.google.com) (plano gratuito Spark).
-2. **Firestore:** Criar banco de dados, local `southamerica-east1 (São Paulo)`, modo de produção.
-3. **Login:** Authentication → Vamos começar → Método de login → ative **E-mail/senha** e **Google**.
-   Em Modelos, troque o idioma para português.
-4. **App da Web:** Configurações do projeto → Seus apps → `</>`, nome "Trilha Inovaparq".
-   Depois, em Hosting, clique em Vamos começar e avance até o fim.
-5. No Cloud Shell do projeto, rode `scripts/configurar-publicacao.sh <id-do-projeto> <dono/repositorio>`
-   e coloque o número do projeto que ele mostra em `WIF_PROVIDER`, no topo de `.github/workflows/deploy.yml`.
-6. Faça um push na `main` (ou rode o workflow manualmente) para publicar.
+### Primeira conta com poder de aprovação
+
+Escolha uma das opções (as duas são idempotentes):
+
+1. Coloque seu e-mail em `BOOTSTRAP_DEV_EMAILS`. No primeiro acesso (Google ou cadastro) a conta já nasce **Desenvolvedor** e ativa.
+2. Defina `SEED_DEV_EMAIL` e `SEED_DEV_PASSWORD` e rode `npm run db:seed`.
+
+### Login com Google
+
+1. Google Cloud Console → APIs e serviços → Credenciais → **ID do cliente OAuth** (aplicativo da Web).
+2. URI de redirecionamento autorizado: `https://SEU-DOMINIO/api/auth/callback/google` (e `http://localhost:3000/api/auth/callback/google` para testes).
+3. Preencha `AUTH_GOOGLE_ID` e `AUTH_GOOGLE_SECRET`. Sem eles, o botão aparece como “configuração pendente”.
+
+## Fluxo de acesso
+
+| Situação | O que acontece |
+| --- | --- |
+| Cadastro por e-mail/senha ou primeiro login com Google | Conta criada como **PENDENTE**; a pessoa vê “Cadastro recebido. Em análise.” |
+| Aprovação em *Administração → Pessoas e acessos* | Quem aprova escolhe o papel final (a pessoa só indica se é participante ou mentor) |
+| Recusa | Exige motivo; conta fica **REJEITADO** e o login é bloqueado |
+| Desativação / reativação | Conta **INATIVO** perde o acesso na próxima requisição |
+
+Regras de quem pode fazer o quê (`src/lib/roles.ts`, testadas em `tests/roles.test.ts`):
+
+- **Administrador**: aprova, recusa, desativa e concede *Participante* ou *Mentor*. Não altera contas de Administrador/Desenvolvedor.
+- **Desenvolvedor**: tudo o que o Administrador faz e também concede *Administrador* e *Desenvolvedor*. Acessa as três áreas.
+- Ninguém altera a própria conta. Toda ação fica no **registro de auditoria** (`AuditLog`).
+- Papel e situação são lidos do banco a cada requisição (`src/lib/session.ts`); o token da sessão guarda só o id.
+  Server actions revalidam a permissão no servidor. O middleware apenas barra quem não tem cookie de sessão.
+
+## Áreas e rotas
+
+- Público: `/` (tela inicial com animação de fundo + login), `/cadastro`, `/aguardando-aprovacao`, `/acesso-negado`
+- Participante: `/inicio`, `/diagnostico`, `/jornada`, `/fase/[1-10]`, `/aula`, `/missao`, `/verificacao`, `/projeto`, `/recompensas`, `/mentores`, `/agendamento`, `/comunidade`, `/portfolio`
+- Mentor: `/mentor`, `/mentor/avaliar`, `/mentor/agenda`, `/mentor/comunidade`
+- Administração: `/admin`, `/admin/turmas`, `/admin/conteudos`, `/admin/beneficios`, `/admin/usuarios`, `/admin/configuracoes`
+
+A animação da tela inicial (`src/components/AnimatedBackground.tsx`) respeita `prefers-reduced-motion`,
+pausa quando a aba fica oculta e tem botão “Pausar animação” (preferência lembrada no navegador).
+
+## Jogos de aprendizagem (`/jogos`)
+
+Arena com cinco jogos curtos, cada um ligado ao tema de uma fase (o cartão aparece também na página da fase):
+
+| Jogo | Fase | Mecânica | Ensina |
+| --- | --- | --- | --- |
+| Fato ou suposição? | 2 · Investigador | Classificação contra o relógio, com combo | Evidência x opinião, vieses de entrevista |
+| Memória do Canvas | 5 · Arquiteto | Jogo da memória | Blocos do Business Model Canvas com exemplos |
+| Monte o experimento | 6 · Construtor | Ordenar etapas (3 tentativas) | Ciclo de experimento com critério definido antes |
+| Mesa de negociação | 7 · Negociador | Diálogo com escolhas e medidor de confiança | Perguntar antes de dar preço, contrapartidas, pilotos |
+| Fôlego de caixa | 8 · Gestor | Simulação de 6 meses | Queima de caixa, runway, custo fixo x receita, equipe |
+
+- Cada partida é salva em `GameResult`; as estrelas (35%, 65%, 90% da pontuação) são calculadas no servidor
+  (`src/app/actions/games.ts`), que limita a pontuação ao máximo do jogo e ignora partidas com menos de 4 s.
+- Jogos são **prática**: rendem estrelas e recordes, mas **não somam XP da trilha** (mantém o teto de 500 XP por fase do roteiro).
+- Conteúdo dos jogos fica no próprio componente (`src/components/games/*`); o mesmo formato serve para outras fases.
+- Teclado: todos os jogos funcionam sem mouse; animações respeitam “reduzir movimento”.
+
+## O que é real e o que é demonstração
+
+**Real (banco + servidor):** contas, login Google/e-mail, aprovação, papéis, bloqueio de áreas por papel,
+auditoria, contadores de contas no painel administrativo.
+
+**Demonstração (faixa “Dados demonstrativos” na tela):** XP, fases, aulas, missões, avaliações, benefícios, agenda,
+comunidade, turmas e indicadores. Os dados ficam em `src/lib/demo.ts`. Botões dessas telas explicam o que a versão
+final fará e nunca simulam sucesso. Serão substituídos nas etapas 3 a 7 do roteiro.
+
+## Pendências concretas
+
+- `ESPECIFICACAO_FUNCIONAL.md`, `DESIGN_SYSTEM.md` e `CURRICULO_SEED.json` não foram recebidos; a etapa 1 seguiu o HTML e o PDF.
+- Logomarca: usada a versão colorida digital (`public/brand/`, PNG 436×96). Substituir pelo vetor oficial quando houver.
+- Recuperação de senha e notificação por e-mail da aprovação dependem de um provedor de e-mail (não configurado).
+- Limite de tentativas de login (rate limit) a ser adicionado junto com o deploy.
+- Etapa 2 em diante: papéis por programa/turma/projeto, políticas no banco, trilha, missões, XP, benefícios, agenda.
+- Deploy não realizado.
+
+## Publicação
+
+Esta versão precisa de um servidor Node.js e de um PostgreSQL (não é mais um site estático).
+Opções simples: Vercel + Neon/Supabase (Postgres), Render ou Railway, ou Firebase App Hosting + Cloud SQL.
+Em qualquer uma: configure as variáveis de `.env.example`, rode `npx prisma migrate deploy` e `npm run db:seed`
+e inclua `https://SEU-DOMINIO/api/auth/callback/google` nas URIs de redirecionamento do Google.
+
+O GitHub Actions (`.github/workflows/ci.yml`) roda tipos, testes e build em cada PR; ele não publica nada.
+
+A versão anterior (site estático com Firebase) está preservada no branch `versao-firebase`. O site antigo
+continua no ar como estava até ser substituído; o conteúdo da trilha baseado no manual de incubação do
+Inovaparq (`src/content/trilha.ts` daquele branch) pode ser reaproveitado na etapa 3.
+
+## Backup
+
+Dados vivem no PostgreSQL: `pg_dump "$DATABASE_URL" > backup.sql` e `psql "$DATABASE_URL" < backup.sql`.

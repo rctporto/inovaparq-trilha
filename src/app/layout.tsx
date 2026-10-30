@@ -1,21 +1,23 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import { ToastProvider } from "@/components/ui/Toast";
 import "./globals.css";
-import { Header } from "@/components/Header";
-import { SessionProvider } from "@/lib/session";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Inovaparq · Trilha de Inovação",
-  description: "Plataforma gamificada de inovação do Inovaparq",
+  title: { default: "Inovaparq · Jornada empreendedora", template: "%s · Inovaparq" },
+  description: "Plataforma de treinamento em empreendedorismo e inovação do Inovaparq.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" className={inter.variable}>
       <body>
-        <SessionProvider>
-          <Header />
-          <main className="container">{children}</main>
-        </SessionProvider>
+        <a href="#conteudo" className="skip-link">
+          Pular para o conteúdo
+        </a>
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   );
