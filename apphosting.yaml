@@ -13,6 +13,10 @@ scripts:
 env:
   - variable: AUTH_TRUST_HOST
     value: "true"
+  # Endereço público do site. Sem ele, o Auth.js monta os links de login com o host interno
+  # do contêiner (localhost:8080). Troque aqui se o site ganhar um domínio próprio.
+  - variable: AUTH_URL
+    value: https://inovaparq-trilha--inovaparq-trilha.us-east4.hosted.app
   # E-mails que já nascem Desenvolvedor (separados por vírgula). Fica em segredo para não expor no repositório.
   - variable: BOOTSTRAP_DEV_EMAILS
     secret: BOOTSTRAP_DEV_EMAILS
