@@ -1,5 +1,5 @@
 # Firebase App Hosting (Next.js com servidor). Os segredos ficam no Cloud Secret Manager:
-#   firebase apphosting:secrets:set DATABASE_URL   (e AUTH_SECRET, AUTH_GOOGLE_ID, AUTH_GOOGLE_SECRET)
+#   firebase apphosting:secrets:set DATABASE_URL   (e AUTH_SECRET, AUTH_GOOGLE_ID, AUTH_GOOGLE_SECRET, BOOTSTRAP_DEV_EMAILS)
 runConfig:
   minInstances: 0
   maxInstances: 3
@@ -13,8 +13,9 @@ scripts:
 env:
   - variable: AUTH_TRUST_HOST
     value: "true"
+  # E-mails que já nascem Desenvolvedor (separados por vírgula). Fica em segredo para não expor no repositório.
   - variable: BOOTSTRAP_DEV_EMAILS
-    value: ""
+    secret: BOOTSTRAP_DEV_EMAILS
   - variable: DATABASE_URL
     secret: DATABASE_URL
     availability: [BUILD, RUNTIME]
