@@ -115,7 +115,7 @@ Esta versão precisa de um servidor Node.js e de um PostgreSQL (não é mais um 
    `AUTH_GOOGLE_ID` e `AUTH_GOOGLE_SECRET`.
 4. App Hosting → Criar backend → conecte o GitHub `rctporto/inovaparq-trilha`, branch `main`, região
    `southamerica-east1`. Cada push na `main` publica; o build roda `prisma migrate deploy` antes do `next build`.
-5. Preencha `BOOTSTRAP_DEV_EMAILS` em `apphosting.yaml` com o seu e-mail para a primeira conta nascer Desenvolvedor.
+5. Crie o segredo `BOOTSTRAP_DEV_EMAILS` (`firebase apphosting:secrets:set BOOTSTRAP_DEV_EMAILS`) com o seu e-mail para a primeira conta nascer Desenvolvedor.
 6. No Google Cloud (Credenciais OAuth), adicione `https://SEU-BACKEND.web.app/api/auth/callback/google`
    (ou o domínio próprio) às URIs de redirecionamento.
 
