@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
-import { FilterList } from "@/components/demo/Interactive";
-import { Avatar, Button, PageHead, StatusBadge } from "@/components/ui";
+import { Button, EmptyState, PageHead } from "@/components/ui";
 import { Icon } from "@/components/ui/Icon";
-import { MENTORS } from "@/lib/demo";
 
 export const metadata: Metadata = { title: "Encontrar mentores" };
 
@@ -10,30 +8,9 @@ export default function Mentores() {
   return (
     <>
       <PageHead eyebrow="Conexões que fazem avançar" title="Encontre um novo ponto de vista." desc="Suporte coletivo disponível desde o início. Mentorias individuais seguem os marcos da trilha." action={<Button href="/agendamento" variant="light" icon="calendar">Minha agenda</Button>} />
-      <div className="row mb wrap">
-        <StatusBadge>Turma Semente 2026</StatusBadge>
-        <StatusBadge tone="gray">Perfis ilustrativos</StatusBadge>
-      </div>
-      <FilterList
-        placeholder="Buscar especialidade"
-        items={MENTORS.map((m) => ({
-          key: m.name,
-          search: `${m.name} ${m.area} ${m.skills}`,
-          node: (
-            <section className="card mentor-card">
-              <div className="row mb">
-                <Avatar initials={m.initials} tone={m.tone} />
-                <div><h2>{m.name}</h2><span className="tiny muted">Mentor(a) da jornada</span></div>
-              </div>
-              <StatusBadge>{m.area}</StatusBadge>
-              <p className="smalltext muted">{m.skills}</p>
-              <div className="divider" />
-              <p className="tiny muted">Clínica coletiva disponível para sua turma.</p>
-              <Button href="/agendamento" variant="light" small icon="calendar">Ver horários</Button>
-            </section>
-          ),
-        }))}
-      />
+      <section className="card">
+        <EmptyState icon="people" title="Nenhum mentor disponível ainda" text="Os mentores da sua turma aparecerão aqui quando forem cadastrados pela coordenação do Inovaparq." />
+      </section>
       <div className="grid g2 mt">
         <div className="card">
           <div className="feature-icon plum"><Icon name="people" /></div>

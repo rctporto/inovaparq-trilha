@@ -82,14 +82,14 @@ Arena com cinco jogos curtos, cada um ligado ao tema de uma fase (o cartão apar
 - Conteúdo dos jogos fica no próprio componente (`src/components/games/*`); o mesmo formato serve para outras fases.
 - Teclado: todos os jogos funcionam sem mouse; animações respeitam “reduzir movimento”.
 
-## O que é real e o que é demonstração
+## O que é real e o que ainda não existe
 
 **Real (banco + servidor):** contas, login Google/e-mail, aprovação, papéis, bloqueio de áreas por papel,
-auditoria, contadores de contas no painel administrativo.
+auditoria, contadores de contas no painel administrativo e resultados dos jogos.
 
-**Demonstração (faixa “Dados demonstrativos” na tela):** XP, fases, aulas, missões, avaliações, benefícios, agenda,
-comunidade, turmas e indicadores. Os dados ficam em `src/lib/demo.ts`. Botões dessas telas explicam o que a versão
-final fará e nunca simulam sucesso. Serão substituídos nas etapas 3 a 7 do roteiro.
+**Ainda não gravado:** progresso na trilha, XP, aulas, missões, avaliações, benefícios, agenda, comunidade e turmas.
+Essas telas mostram o estado inicial (fase 1, 0 XP e listas vazias) para todos, sem pessoas ou projetos fictícios.
+A estrutura da trilha (fases e rubrica) fica em `src/lib/trilha.ts`. Os dados reais chegam nas etapas 3 a 7 do roteiro.
 
 ## Pendências concretas
 

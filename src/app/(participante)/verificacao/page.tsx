@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import { QuizDemo } from "@/components/demo/Interactive";
 import { Button, PageHead, StatusBadge } from "@/components/ui";
 import { Icon } from "@/components/ui/Icon";
+import { CURRENT_PHASE } from "@/lib/trilha";
 
 export const metadata: Metadata = { title: "Avaliação de conhecimentos" };
 
 export default function Verificacao() {
   return (
     <>
-      <PageHead eyebrow="Verificação de aprendizagem" title="O que orienta uma boa decisão?" desc="Avaliação de conhecimentos · fase Criador" action={<Button href="/fase/4" variant="light" icon="back">Voltar à fase</Button>} />
+      <PageHead eyebrow="Verificação de aprendizagem" title="O que orienta uma boa decisão?" desc="Avaliação de conhecimentos · questão de exemplo" action={<Button href={`/fase/${CURRENT_PHASE}`} variant="light" icon="back">Voltar à fase</Button>} />
       <div className="grid wide">
         <section className="card">
           <div className="row between mb wrap">

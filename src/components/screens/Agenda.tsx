@@ -1,33 +1,20 @@
-"use client";
-
-import { BookingDemo } from "@/components/demo/Interactive";
-import { Avatar, DemoRibbon, ListRow, PageHead, StatusBadge } from "@/components/ui";
+import { EmptyState, ListRow, PageHead } from "@/components/ui";
 
 export function AgendaScreen() {
   return (
     <>
-      <DemoRibbon />
-      <PageHead eyebrow="Agenda de encontros" title="Uma conversa. Novas perspectivas." desc="Reserve um horário e organize as perguntas do seu projeto." action={<StatusBadge tone="green">Clínica coletiva</StatusBadge>} />
-      <BookingDemo
-        aside={(summary, confirm) => (
-          <aside className="stack">
-            <div className="card">
-              <div className="row mb">
-                <Avatar initials="MS" tone="teal" />
-                <div><h2>Marina Silva</h2><span className="tiny muted">Inovação e descoberta</span></div>
-              </div>
-              <div className="divider" />
-              <h3>Clínica de inovação</h3>
-              <p className="sub">Discussão de projetos, perguntas e próximos experimentos.</p>
-              <ListRow title="Data selecionada" desc={summary} icon="calendar" />
-              <ListRow title="Modalidade" desc="Encontro online em grupo" icon="people" />
-              <ListRow title="Disponibilidade ilustrativa" desc="4 de 12 vagas livres" icon="check" />
-              <div className="mt">{confirm}</div>
-            </div>
-            <div className="notice">A confirmação é demonstrativa nesta etapa. Nenhum evento ou convite real será enviado.</div>
-          </aside>
-        )}
-      />
+      <PageHead eyebrow="Agenda de encontros" title="Uma conversa. Novas perspectivas." desc="Clínicas coletivas e mentorias da sua turma." />
+      <div className="grid wide">
+        <section className="card">
+          <EmptyState icon="calendar" title="Nenhum encontro agendado" text="Quando a coordenação abrir horários de clínicas e mentorias, eles aparecerão aqui para reserva." />
+        </section>
+        <aside className="card">
+          <h2>Como funciona</h2>
+          <ListRow title="Clínicas coletivas" desc="Abertas desde o início da jornada" icon="people" />
+          <ListRow title="Mentorias individuais" desc="Liberadas pelos marcos da trilha" icon="gift" />
+          <ListRow title="Lembretes" desc="Avisos antes de cada encontro" icon="bell" />
+        </aside>
+      </div>
     </>
   );
 }

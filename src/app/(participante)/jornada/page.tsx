@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { Button, DemoRibbon, PageHead, PhaseCard, ProgressBar, StatusBadge } from "@/components/ui";
+import { Button, PageHead, PhaseCard, ProgressBar, StatusBadge } from "@/components/ui";
 import { Icon } from "@/components/ui/Icon";
-import { CURRENT_PHASE, PHASES } from "@/lib/demo";
+import { CURRENT_PHASE, PHASES } from "@/lib/trilha";
 
 export const metadata: Metadata = { title: "Mapa da jornada" };
 
@@ -9,8 +9,7 @@ export default function Jornada() {
   const done = PHASES.filter((p) => p.state === "done").length;
   return (
     <>
-      <DemoRibbon />
-      <PageHead eyebrow="Mapa de evolução" title="Sua ideia ganha caminho." desc="Avance com conhecimento, experimentação e decisões baseadas em evidências." action={<Button href={`/fase/${CURRENT_PHASE}`}>Continuar fase {CURRENT_PHASE}</Button>} />
+      <PageHead eyebrow="Mapa de evolução" title="Sua ideia ganha caminho." desc="Avance com conhecimento, experimentação e decisões baseadas em evidências." action={<Button href={`/fase/${CURRENT_PHASE}`}>Abrir fase {CURRENT_PHASE}</Button>} />
       <div className="card mb">
         <div className="row between mb wrap">
           <div>
