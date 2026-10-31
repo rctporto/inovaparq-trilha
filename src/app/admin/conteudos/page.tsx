@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import { DemoAction } from "@/components/DemoAction";
 import { DemoRibbon, ListRow, PageHead, StatusBadge } from "@/components/ui";
-import { PHASES } from "@/lib/demo";
+import { PHASES } from "@/lib/trilha";
 
 export const metadata: Metadata = { title: "Gestão de conteúdo" };
 
 export default function Conteudos() {
   return (
     <>
-      <DemoRibbon />
+      <DemoRibbon>Exemplo do editor de conteúdo. Nenhuma aula foi publicada ainda; o editor real chega na etapa 7.</DemoRibbon>
       <PageHead eyebrow="Arquitetura de aprendizagem" title="Conteúdo que vira prática." desc="Organize fases, aulas, missões e critérios de avaliação." action={<DemoAction label="Nova versão da trilha" icon="plus" title="Versionamento da trilha" text="Uma nova versão começa como rascunho. A publicação deve preservar a versão vinculada às turmas já em andamento." />} />
       <div className="grid reverse">
         <aside className="card">
